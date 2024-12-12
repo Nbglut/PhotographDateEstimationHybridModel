@@ -21,7 +21,7 @@ import time
 from torchvision import models
 from torchvision.models.vision_transformer import EncoderBlock
 from CNN import CNNModel
-from CNN import Conv2DBlock
+from CNN import ConvEncoder
 
 
 #API KEY WANDB ##42c65da3d76f8de5a236bb06dab102275096401b
@@ -79,6 +79,10 @@ def _load_data(batch_size):
     print(f"total sam: {total_sam}")
 
     cls_weights = {cls: total_sam / count for cls, count in class_num.items()}
+    max_weight = max(cls_weights.values())
+    cls_weights = {cls: weight / max_weight for cls, weight in cls_weights.items()}
+
+
     print(f"class weights: {cls_weights}")
 
     samp_weights = [cls_weights[label] for label in dataset.targets] 
@@ -88,14 +92,13 @@ def _load_data(batch_size):
     print("Load training.")
     train_loader= torch.utils.data.DataLoader(dataset, batch_size=32, sampler=samps)
     print("Load test.")
-    test_loader=torch.utils.data.DataLoader(testdataset,batch_size=32, shuffle=False)
+    test_loader=torch.utils.data.DataLoader(testdataset,batch_size=32, shuffle=True)
     print("Done loading.")
     return train_loader, test_loader
 
 
 def _compute_accuracy(y_pred, y_batch):
-    ## please write the code below ##
-    accy = (100*(y_batch ==y_pred).sum().item()) // (y_batch.size(0))
+    accy = (100 * torch.eq(y_batch, y_pred).sum().item()) // y_batch.size(0)
     return accy
 
 
@@ -137,30 +140,45 @@ def main():
 #else if model is CNN 
     if args.model=='CNN':
 #change the Encoder by making a "CNNBlock" which is the same as normal TransformerBlock but with  CNNs instead of MLPs
-         layers: OrderedDict[str, nn.Module] = OrderedDict()
-         for i in range(16):
-            CNNBlock= EncoderBlock(
-                12, #num_heads typical for vit_b16
-                768, #hidden_dim typically 768
-                3072, #ffn tpically 3072
-                .1, #dropout usually .1
-                0.1, #dropout rate applied to the attention weights usually 0.1​
-                nn.LayerNorm, #normalization layer
-            )
-            cnn= Conv2DBlock(in_channels=768, out_channels=32, kernel_size=3, stride=1, dropout_rate=0.1)
+         model.encoder=  ConvEncoder(
+            model.seq_length,
+            16, #num_layers
+            12, #num_heads
+            model.hidden_dim,
+            model.mlp_dim,
+            model.dropout,
+            model.attention_dropout,
+            model.norm_layer,
+        )   
+       
+
+
+
+
+
+
+
+
+
+
+
+# layers: OrderedDict[str, nn.Module] = OrderedDict()
+        # for i in range(16):
+         #   CNNBlock= EncoderBlock(
+          #      12, #num_heads typical for vit_b16
+           #     768, #hidden_dim typically 768
+            #    3072, #ffn tpically 3072
+             #   .1, #dropout usually .1
+              #  0.1, #dropout rate applied to the attention weights usually 0.1​
+               # nn.LayerNorm, #normalization layer
+           # )
+          #  cnn= Conv2DBlock(in_channels=768, out_channels=32, kernel_size=3, stride=1, dropout_rate=0.1)
 
   # CNN Block.
-           # resnet.conv1 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=7, stride=1, padding=3)
+           # CNNBlock.mlp = cnn
+          #  layers[f"encoder_layer_{i}"] = CNNBlock
+        # model.encoder.layers=nn.Sequential(layers)
 
-           # num_features = resnet.fc.in_features  # Get the number of input features to the final fully connected layer
-           # resnet.fc = nn.Linear(num_features, 13) 
-            CNNBlock.mlp = cnn
-            layers[f"encoder_layer_{i}"] = CNNBlock
-         model.encoder.layers=nn.Sequential(layers)
-
-
-
-#Maybe even use ResNet torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=True)
 
 
     ## to gpu or cpu
@@ -171,7 +189,17 @@ def main():
 
 
     optimizer = optim.Adam(model.parameters(),lr=learning_rate)  ## Adam Optimizer
-    loss_fun =   nn.CrossEntropyLoss()  ## cross-entropy loss
+#Weighted loss function
+    class_num = Counter(train_loader.dataset.targets)
+    total_sam = sum(class_num.values())
+
+    cls_weights = {cls: total_sam / count for cls, count in class_num.items()}
+    max_weight = max(cls_weights.values())
+    cls_weights = {cls: weight / max_weight for cls, weight in cls_weights.items()}
+    class_weights = torch.tensor([cls_weights[i] for i in range(13)]).to(device)
+
+    loss_fun =   nn.CrossEntropyLoss(weight=class_weights)  ## cross-entropy loss
+    #loss_fun =   nn.CrossEntropyLoss()  ## cross-entropy loss
 
     ## load checkpoint 
     curr_dir=os.path.dirname(__file__)
@@ -204,6 +232,9 @@ def main():
                 #back prop
                 optimizer.zero_grad()
                 loss.backward()
+#Gradient clipping
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
+
                 optimizer.step()
 
                 #compute accuracy
@@ -260,7 +291,6 @@ def main():
 if __name__ == '__main__':
     main()
     
-
 
 
 
