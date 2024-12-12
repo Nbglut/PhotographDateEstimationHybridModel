@@ -13,30 +13,26 @@ class ConvBlock(nn.Module):
     def __init__(self, hidden_dim, mlp_dim, kernel_size, stride, dropout_rate):
         super().__init__()
         self.conv = nn.Sequential(
-            nn.Conv1d(hidden_dim, mlp_dim, kernel_size=kernel_size, stride=stride, padding=1),
-            nn.BatchNorm1d(mlp_dim),
+            nn.Conv2d(hidden_dim, mlp_dim, kernel_size=kernel_size, stride=stride, padding=1),
+            nn.BatchNorm2d(mlp_dim),
             nn.GELU(),
             nn.Dropout(dropout_rate),
-            nn.Conv1d(mlp_dim, hidden_dim, kernel_size=kernel_size, stride=stride, padding=1),
-            nn.BatchNorm1d(hidden_dim),
+            nn.Conv2d(mlp_dim, hidden_dim, kernel_size=kernel_size, stride=stride, padding=1),
+            nn.BatchNorm2d(hidden_dim),
             nn.GELU(),
             nn.Dropout(dropout_rate),
         )
     
     def forward(self, x):
-        return x + self.conv(x)
+        result=x
+        result = result.permute(0, 2, 1)  # To rearrange to (batch_size, hidden_dim, seq_length)
+        result = result.unsqueeze(3)  # Adding the last dimension for height 
+        result= self.conv(result) 
+#return it back to original size
+        result=result.squeeze(3) 
+        result = result.permute(0, 2, 1)       
+        return x + result
 
-
-
-    def forward(self, x):  #default  
-       # print("Input shape:", x.shape)  # Before convolution
-        x = x.permute(0, 2, 1)
-        result = self.conv(x)        
-       # print("Output shape:", result.shape)  # After convolution
-        result = result.permute(0, 2, 1)
-
-        return result
-    
 class ConvEncoderBlock(nn.Module):
     """Transformer encoder block."""
 
