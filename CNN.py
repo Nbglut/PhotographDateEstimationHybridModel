@@ -22,6 +22,7 @@ class ConvBlock(nn.Module):
             nn.GELU(),
             nn.Dropout(dropout_rate),
         )
+        self.conv.apply(add_weights)
     
     def forward(self, x):
         result=x
@@ -111,7 +112,7 @@ class ConvEncoder(nn.Module):
 
         
 def add_weights(m):
-    if isinstance(m, nn.Conv1d):
+    if isinstance(m, nn.Conv2d):
         torch.nn.init.xavier_uniform_(m.weight)
         torch.nn.init.zeros_(m.bias)
         
@@ -120,75 +121,6 @@ def add_weights(m):
 
 
 
-class CNNModel(nn.Module):
-    """docstring for ClassName"""
-    
-    def __init__(self, args):
-        super(CNNModel, self).__init__()
-        ##-----------------------------------------------------------
-        ##
-        ##-----------------------------------------------------------
-
-        ## define CNN layers below
-        self.conv = nn.Sequential( ## Layer1
-                    nn.Conv1d(in_channels=32,out_channels=64, kernel_size=4, stride=2),
-                    #                nn.Conv2d(in_channels=3,out_channels=200, kernel_size=2, stride=2),
-                    nn.BatchNorm1d(64),
-
-                    nn.ReLU(),
-                    nn.Dropout(0.2),
-                    #Layer 2
-                    nn.Conv1d(in_channels=64,out_channels=128, kernel_size=4, stride=2),
-                    nn.BatchNorm1d(128),
-                    nn.ReLU(),
-                    nn.MaxPool1d(2,2),
-                    nn.Dropout(0.2),
-                    #Layer 3
-                    nn.Conv1d(in_channels=128,out_channels=256, kernel_size=3, stride=2),
-                    nn.BatchNorm1d(256),
-                    nn.ReLU(),
-                    nn.Dropout(0.2),
-                    nn.Flatten(),
-                    #fc1
-                    nn.Linear(256, 1225),
-                    nn.BatchNorm1d(1225),
-                    nn.ReLU(),
-                    nn.Dropout(0.2),
-                    #fc2
-                    nn.Linear(1225, 13)
-    
-                      )
-        self.conv.apply(add_weights)        
-
-
-
-
-    '''feed features to the model'''
-    def forward(self, x):  #default
-        
-        ##---------------------------------------------------------
-        ## write code to feed input features to the CNN models defined above
-        ##---------------------------------------------------------
-        result = self.conv(x)
-
-        ## write flatten tensor code below
-    #x =  torch.flatten(x_out)
-        
-
-        ## ---------------------------------------------------
-        ## write fully connected layer (Linear layer) below
-        ## ---------------------------------------------------
-        #x = self.fc(x)  # predict y
-        #result=self.fc1(x)
-        
-        return result
-    
-
-        
-def add_weights(m):
-    if isinstance(m, nn.Conv3d):
-        torch.nn.init.xavier_uniform_(m.weight)
-        torch.nn.init.zeros_(m.bias)
         
                 
     
