@@ -51,20 +51,22 @@ def _load_data(batch_size):
     '''Data loader'''
 #Transformations
     print("start loading....")
-    transformations=transforms.Compose([
-        transforms.Pad((10, 10, 10, 10)),
-        transforms.Resize((224, 224)),          
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomVerticalFlip(),
-        transforms.RandomRotation(20),
-        transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),  
-        transforms.RandomAffine(degrees=50, shear=(-20,20), translate=(0.2, 0.2) ), 
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-
-
-
+    transformations = transforms.Compose([
+    transforms.Pad((10, 10, 10, 10)),
+    transforms.Resize((224, 224)),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomVerticalFlip(),
+    transforms.RandomRotation(20),
+    transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
+    transforms.RandomAffine(degrees=50, shear=(-20, 20), translate=(0.2, 0.2)),
+    transforms.ColorJitter(brightness=0.2, contrast=0.2, hue=0.1),
+    transforms.RandomPerspective(distortion_scale=0.5, p=0.3),
+    transforms.RandomResizedCrop((224, 224), scale=(0.8, 1.0), ratio=(0.75, 1.33)),
+    transforms.RandomGrayscale(p=0.2),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
+
 #load datasets
     print("Load training")
     dataset= datasets.ImageFolder(root='data/train',transform=transformations)
