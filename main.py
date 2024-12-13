@@ -20,7 +20,6 @@ from PIL import Image, ImageFile
 import time
 from torchvision import models
 from torchvision.models.vision_transformer import EncoderBlock
-from CNN import CNNModel
 from CNN import ConvEncoder
 
 
