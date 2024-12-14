@@ -29,9 +29,9 @@ from CNN import ConvEncoder
 ## input hyper-paras
 parser = argparse.ArgumentParser(description = "nueral networks")
 parser.add_argument("-mode", dest="mode", type=str, default='train', help="train or test")
-parser.add_argument("-num_epoches", dest="num_epoches", type=int, default=10, help="num of epoches")
+parser.add_argument("-num_epoches", dest="num_epoches", type=int, default=30, help="num of epoches")
 parser.add_argument("-learning_rate", dest ="learning_rate", type=float, default=0.0001, help = "learning rate")
-parser.add_argument("-batch_size", dest="batch_size", type=int, default=32, help="batch size")
+parser.add_argument("-batch_size", dest="batch_size", type=int, default=16, help="batch size")
 parser.add_argument("-load_checkpoint", dest="load_checkpoint", type=str2bool, default=False, help="true of false")
 parser.add_argument("-model", dest="model", type=str, default='basic', help="basic or CNN")
 
@@ -189,7 +189,7 @@ def main():
 
 
 
-    optimizer = optim.Adam(model.parameters(),lr=learning_rate)  ## Adam Optimizer
+    optimizer = optim.Adam(model.parameters(),lr=learning_rate,weight_decay=1e-4)  ## Adam Optimizer
 #Weighted loss function
     class_num = Counter(train_loader.dataset.targets)
     total_sam = sum(class_num.values())
