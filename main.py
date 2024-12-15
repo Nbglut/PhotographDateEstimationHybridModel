@@ -21,6 +21,9 @@ import time
 from torchvision import models
 from torchvision.models.vision_transformer import EncoderBlock
 from CNN import ConvEncoder
+from model import CNNModel
+import timm
+
 
 
 #API KEY WANDB ##42c65da3d76f8de5a236bb06dab102275096401b
@@ -44,7 +47,6 @@ Image.MAX_IMAGE_PIXELS = None  # Remove pixel limit entirely
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 args = parser.parse_args()
-   
 
 
 def _load_data(batch_size):
@@ -123,7 +125,7 @@ def main():
     print("device: ", device)
     if use_cuda:
         torch.cuda.manual_seed(72)
-
+    wandbname="PhotographicEstimationViT"
     ## initialize hyper-parameters
     num_epoches = args.num_epoches
     learning_rate = args.learning_rate
@@ -139,7 +141,7 @@ def main():
     heads_layers["head"] = nn.Linear(512, 13)
     model.heads = nn.Sequential(heads_layers)
 #else if model is CNN 
-    if args.model=='CNN':
+    if args.model=='CNNViT':
 #change the Encoder by making a "CNNBlock" which is the same as normal TransformerBlock but with  CNNs instead of MLPs
          model.encoder=  ConvEncoder(
             model.seq_length,
@@ -150,41 +152,30 @@ def main():
             model.dropout,
             model.attention_dropout,
             model.norm_layer,
-        )   
-       
+        )
+         wandbname=CNNVit
+    if args.model=='CNN':
+#CNN        wandbname="CNN" 
+            #CNN
+            model= torchvision.models.vgg16(pretrained=True)
+            #Change to 13 classes
+            num_ftrs = model.classifier[6].in_features  
+            model.classifier[6] = torch.nn.Linear(num_ftrs, 13) 
+
+            print("BASIC CNN MODEL") 
+    if args.model=="CNNX":
+           wandbname='CNNX'
+           print("CNNX!")
+           model = timm.create_model('xception',num_classes=13, pretrained=True) 
 
 
 
-
-
-
-
-
-
-
-
-# layers: OrderedDict[str, nn.Module] = OrderedDict()
-        # for i in range(16):
-         #   CNNBlock= EncoderBlock(
-          #      12, #num_heads typical for vit_b16
-           #     768, #hidden_dim typically 768
-            #    3072, #ffn tpically 3072
-             #   .1, #dropout usually .1
-              #  0.1, #dropout rate applied to the attention weights usually 0.1​
-               # nn.LayerNorm, #normalization layer
-           # )
-          #  cnn= Conv2DBlock(in_channels=768, out_channels=32, kernel_size=3, stride=1, dropout_rate=0.1)
-
-  # CNN Block.
-           # CNNBlock.mlp = cnn
-          #  layers[f"encoder_layer_{i}"] = CNNBlock
-        # model.encoder.layers=nn.Sequential(layers)
 
 
 
     ## to gpu or cpu
     model.to(device)
-    wandb.init(project='PhotographicEstimation', name='PhotographicEstimationViT')
+    wandb.init(project='PhotographicEstimation', name=wandbname)
     wandb.watch(model, log_freq=100)
 
 
